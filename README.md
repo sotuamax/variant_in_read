@@ -6,6 +6,7 @@ Required:
 1. reference fasta file (REF)
 2. BAM alignment file (BAM)
 3. output name (OUT) <br>
+
 Optional: <br>
 BED file <br>
 
