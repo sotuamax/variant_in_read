@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np 
 import time
 from mpi4py import MPI
-
+from collections import Counter
 
 def args_parser():
     '''parser the argument from terminal command'''
@@ -77,6 +77,42 @@ def bam_count(args, sub_loc):
         count_list.append(len(region_read))
     return count_list
 
+def parse_out(out):
+    out_df = pd.read_table(f"{out}.txt", sep = "\t", header = 0)
+    out_df["CIGAR"] = out_df["cigar"].str.replace("[0-9]", "", regex = True)
+    out_df["temp"] = np.where(out_df["CIGAR"] == "D", out_df["cigar"].str.strip("D"), 0)
+    out_df["temp"] = out_df["temp"].astype("int")
+    out_df["end"] = out_df["pos"] + out_df["temp"] + 1
+    out_freq = pd.DataFrame(out_df.groupby(by = ["ref", "pos", "end", "CIGAR"], as_index = False).size())
+    # 
+    ref_seq = sorted(set(out_freq["ref"]))
+    cigar_set = sorted(set(out_freq["CIGAR"]))
+    # 
+    for c in cigar_set:
+        c_list = list()
+        for r in ref_seq:
+            r_list = []
+            sub_s = out_freq[out_freq["ref"] == r]
+            for row in sub_s.itertuples():
+                r_list += list(range(row.pos, row.end))
+            r_df = pd.DataFrame.from_dict(dict(Counter(r_list)), orient = "index", columns = ["freq"])
+            r_df["ref"] = r 
+            r_df["pos"] = r_df.index
+            c_list.append(r_df)
+        C_df = pd.concat(c_list, axis = 0)
+        C_df.to_csv(f"{out}_{c}_freq.txt", sep = "\t", index = False)
+
+def update_freq(out, count_df):
+    for c in ["D", "X", "I"]:
+        freq_df = pd.read_table(f"{out}_{c}_freq.txt", sep = "\t", header = 0)
+        freq_df_new = list()
+        for row in count_df.itertuples():
+            freq_df_sub = freq_df[(freq_df["ref"] == row.ref) & (freq_df["pos"] >= row.start) & (freq_df["pos"] < row.end)].copy()
+            freq_df_sub["count"] = row.count
+            freq_df_new.append(freq_df_sub)
+        freq_df_new = pd.concat(freq_df_new, axis = 0)
+        freq_df_new.to_csv(f"{out}_{c}_freq.txt", sep = "\t", index = False)
+
 def endtime(start):
     """elapsed time"""
     end = time.time()
@@ -133,13 +169,18 @@ def main():
             print("Count ...... ")
         count_df = sub_loc.copy()
         count_df["count"] = bam_count(args, sub_loc)
-        count_all = comm.gather(sub_loc, root = 0)
+        count_all = comm.gather(count_df, root = 0)
     # 
     if rank == 0:
-        pd.concat(mismatch_all, axis = 0).to_csv(f"{out}_mismatch.txt", sep = "\t", index = False)
-        pd.concat(indel_all, axis = 0).to_csv(f"{out}_indel.txt", sep = "\t", index = False)
+        mismatch_all_df = pd.concat(mismatch_all, axis = 0)
+        indel_all_df = pd.concat(indel_all, axis = 0)
+        all_df = pd.concat([mismatch_all_df, indel_all_df], axis = 0)
+        all_df.to_csv(f"{out}.txt", sep = "\t", index = False)
         if args.bed != None:
-            pd.concat(count_all, axis = 0).to_csv(f"{out}_count.txt", sep = "\t", index = False)
+            count_df = pd.concat(count_all, axis = 0)
+            count_df.to_csv(f"{out}_count.txt", sep = "\t", index = False)
+            parse_out(out)
+            update_freq(out, count_df)
         test = 1
         endtime(start)
     else:
