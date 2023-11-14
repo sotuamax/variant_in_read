@@ -3,7 +3,7 @@ check variants in alignment reads compared to reference fasta
 
 ### input files:
 Required: 
-1. reference fasta file <REF>
+1. reference fasta file \<REF\>
 2. BAM alignment file <BAM>
 3. output name <OUT>
 Optional:
