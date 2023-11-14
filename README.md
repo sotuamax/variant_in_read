@@ -5,9 +5,9 @@ check variants in alignment reads compared to reference fasta
 Required: 
 1. reference fasta file (REF)
 2. BAM alignment file (BAM)
-3. output name (OUT)
-Optional:
-BED file 
+3. output name (OUT) <br>
+Optional: <br>
+BED file <br>
 
 To enable multiple cores processing, use:
 ```
