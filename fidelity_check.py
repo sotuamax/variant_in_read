@@ -21,7 +21,7 @@ def args_parser():
     header = f"fidelity_check.py: a multiple-processing program for the detection of variants in reads alignment to reference. "
     example = "Example: \nmpiexec -n CORES REF BAM -o OUT [-bed BED]"
     parser=argparse.ArgumentParser(epilog = example, formatter_class=lambda prog: ArgFormatter(prog,max_help_position=100,width=150), description="")
-    parser.add_argument("-v", "--version", action = "version", help = f"software version, {VERSION}")
+    parser.add_argument("--version", action = "version", version = f"software version, {VERSION}")
     parser.add_argument("ref", metavar = "REF", help = "reference fasta")
     parser.add_argument("bam", metavar = "BAM", help = "bam file")
     parser.add_argument("-bed", "--bed", metavar = "BED", required = False, help = "bed file used as template to count reads in regions. ")
