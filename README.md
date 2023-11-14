@@ -2,5 +2,13 @@
 check variants in alignment reads compared to reference fasta 
 
 ### input files:
-1. reference fasta file
-2. BAM alignment file
+Required: 
+1. reference fasta file <REF>
+2. BAM alignment file <BAM>
+3. output name <OUT>
+Optional:
+BED file 
+
+To enable multiple cores processing, use:
+mpiexec -n 8 fidelity_check.py REF BAM -o OUT 
+
